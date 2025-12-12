@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Register</title></head>
+<body>
+  <h2>ลงทะเบียนผู้ป่วย + เปิด Visit</h2>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <h3>ข้อมูลผู้ป่วย</h3>
+    {{ patient_form.as_p }}
+
+    <h3>สัญญาณชีพ</h3>
+    {{ vital_form.as_p }}
+
+    <button type="submit">บันทึกและเข้าคิว</button>
+  </form>
+
+  <hr>
+  <a href="{% url 'queue_list' %}">ไปหน้าคิวรอ</a>
+</body>
+</html>

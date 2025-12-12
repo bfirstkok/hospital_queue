@@ -11,4 +11,8 @@ urlpatterns = [
 
     # app urls
     path("accounts/", include("accounts.urls")),
+
+    path("", include("queues.urls")),
+    path("patients/", include("patients.urls")),
+
 ]

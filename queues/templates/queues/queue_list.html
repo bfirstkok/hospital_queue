@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Queue</title></head>
+<body>
+  <h2>คิวรอ (Waiting)</h2>
+
+  <p>
+    <a href="/patients/register/">+ ลงทะเบียนผู้ป่วย</a> |
+    <a href="/accounts/dashboard/">Dashboard</a>
+  </p>
+
+  <table border="1" cellpadding="8">
+    <tr>
+      <th>Visit</th>
+      <th>ชื่อผู้ป่วย</th>
+      <th>สี</th>
+      <th>registered_at</th>
+      <th>Action</th>
+    </tr>
+
+    {% for q in q_items %}
+      <tr>
+        <td>#{{ q.visit.id }}</td>
+        <td>{{ q.visit.patient.first_name }} {{ q.visit.patient.last_name }}</td>
+        <td>{{ q.visit.final_severity }}</td>
+        <td>
+            <form method="post" action="{% url 'triage_visit' q.visit.id %}"style="display:inline;">
+                {% csrf_token %}
+                <select name="severity">
+                    <option value="GREEN">เขียว</option>
+                    <option value="YELLOW">เหลือง</option>
+                    <option value="RED">แดง</option>
+                </select>
+                <button type="submit">คัดกรอง</button>
+            </form>
+
+            <form method="post" action="{% url 'call_visit' q.visit.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">เรียกคิว</button>
+            </form>
+        </td>
+        <td>{{ q.visit.registered_at }}</td>
+        <td>
+          <form method="post" action="{% url 'call_visit' q.visit.id %}">
+            {% csrf_token %}
+            <button type="submit">เรียกคิว</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">ไม่มีคิวรอ</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
