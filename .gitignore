@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+.venv/
+
+# Django
+db.sqlite3
+*.log
+local_settings.py
+
+# Migrations cache
+*/migrations/__pycache__/
+
+# VS Code / OS
+.vscode/
+.DS_Store
+
+# Jupyter / ML
+.ipynb_checkpoints/
+*.csv

@@ -1,73 +1,197 @@
 <!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Queue</title></head>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>คิวรอ (Waiting)</title>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a2e;
+      --line:rgba(255,255,255,.08);
+      --text:#e9eefc;
+      --muted:rgba(233,238,252,.72);
+      --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:24px;
+      font-family: system-ui, Segoe UI, Tahoma, sans-serif;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(59,130,246,.18), transparent 55%),
+                  radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,.14), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    a{color:#93c5fd; text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1200px; margin:0 auto}
+    .topbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+    .title{display:flex;align-items:center;gap:10px}
+    .title h1{margin:0;font-size:22px}
+    .subtitle{margin:2px 0 0;font-size:12px;color:var(--muted)}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);color:var(--text);
+      border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.18);
+      cursor:pointer;
+    }
+    .btn:hover{background:rgba(255,255,255,.07);text-decoration:none}
+    .btn.danger{border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.12)}
+    .btn.warn{border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.12)}
+    .btn.good{border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.12)}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:var(--shadow); padding:14px;
+    }
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .span12{grid-column:span 12}
+    .span4{grid-column:span 4}
+    .kpi{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+    .kpi .label{font-size:12px;color:var(--muted)}
+    .kpi .val{font-size:28px;font-weight:900}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .chip{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:12px;color:var(--muted)}
+    .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+    .dot.good{background:var(--good)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+    th{font-size:12px;color:rgba(233,238,252,.8)}
+    .muted{color:var(--muted);font-size:12px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:12px;white-space:nowrap}
+    .sev{font-weight:900}
+    .sev.red{color:#fecaca}
+    .sev.yellow{color:#fde68a}
+    .sev.green{color:#86efac}
+
+    form{display:inline}
+    @media (max-width: 900px){
+      body{padding:16px}
+      .span4{grid-column:span 12}
+      th:nth-child(5), td:nth-child(5){display:none;} /* ซ่อนเวลาในจอเล็ก (ปรับได้) */
+    }
+  </style>
+</head>
+
 <body>
-  <h2>คิวรอ (Waiting)</h2>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <div style="font-size:26px">🧾</div>
+      <div>
+        <h1>คิวรอ (Waiting)</h1>
+        <div class="subtitle">จัดการคิว + คัดกรอง + เรียกคิว</div>
+      </div>
+    </div>
 
-  <p>
-    <a href="/patients/register/">+ ลงทะเบียนผู้ป่วย</a> |
-    <a href="/accounts/dashboard/">Dashboard</a>
-  </p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a class="btn" href="/accounts/dashboard/">📊 Dashboard</a>
+      <a class="btn" href="/monitor/">🩺 Monitor</a>
+      <a class="btn" href="/map/">🗺️ Map</a>
+      <a href="/patients/">+ ลงทะเบียนผู้ป่วย</a>
 
-  <table border="1" cellpadding="8">
-    <tr>
-      <th>Visit</th>
-      <th>ชื่อผู้ป่วย</th>
-      <th>สี (Final)</th>
-      <th>AI</th>
-      <th>registered_at</th>
-      <th>Action</th>
-    </tr>
+    </div>
+  </div>
 
-    {% for q in q_items %}
-      <tr>
-        <td>#{{ q.visit.id }}</td>
+  <!-- KPI summary (คำนวณจาก q_items ใน template แบบง่าย) -->
+  <div class="grid" style="margin-bottom:12px">
+    <div class="card span4">
+      <div class="kpi">
+        <div>
+          <div class="label">WAITING ทั้งหมด</div>
+          <div class="val">{{ q_items|length }}</div>
+        </div>
+        <div class="pill"><span class="dot warn"></span>Live</div>
+      </div>
+      <div class="chips">
+        <span class="chip"><span class="dot bad"></span>RED</span>
+        <span class="chip"><span class="dot warn"></span>YELLOW</span>
+        <span class="chip"><span class="dot good"></span>GREEN</span>
+        <span class="chip">*นับแยกสีจะทำใน backend ต่อได้</span>
+      </div>
+    </div>
 
-        <td>
-          {{ q.visit.patient.first_name }} {{ q.visit.patient.last_name }}
-        </td>
+    <div class="card span12">
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:80px">Visit</th>
+              <th>ชื่อผู้ป่วย</th>
+              <th style="width:140px">สี (Final)</th>
+              <th style="width:140px">AI</th>
+              <th style="width:220px">registered_at</th>
+              <th style="width:340px">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for q in q_items %}
+            {% with v=q.visit %}
+            <tr>
+              <td>#{{ v.id }}</td>
 
-        <td>
-          {{ q.visit.final_severity }}
-        </td>
+              <td>
+                <div style="font-weight:900">{{ v.patient.first_name }} {{ v.patient.last_name }}</div>
+                <div class="muted">Queue ID: {{ q.id }}</div>
+              </td>
 
-        <td>
-          {% if q.visit.triage_result %}
-            {{ q.visit.triage_result.ai_severity }}
-            {% if q.visit.triage_result.confidence %}
-              ({{ q.visit.triage_result.confidence }})
-            {% endif %}
-          {% else %}
-            -
-          {% endif %}
-        </td>
+              <td>
+                {% if v.final_severity == "RED" %}
+                  <span class="pill sev red"><span class="dot bad"></span>RED</span>
+                {% elif v.final_severity == "YELLOW" %}
+                  <span class="pill sev yellow"><span class="dot warn"></span>YELLOW</span>
+                {% else %}
+                  <span class="pill sev green"><span class="dot good"></span>GREEN</span>
+                {% endif %}
+              </td>
 
-        <td>
-          {{ q.visit.registered_at }}
-        </td>
+              <td>
+                <span class="pill">
+                  AI: {{ v.triage_result.ai_severity|default:"-" }}
+                </span>
+              </td>
 
-        <td>
-          <!-- คัดกรอง/เปลี่ยนสี -->
-          <form method="post" action="{% url 'triage_visit' q.visit.id %}" style="display:inline;">
-            {% csrf_token %}
-            <select name="severity">
-              <option value="GREEN"  {% if q.visit.final_severity == "GREEN" %}selected{% endif %}>เขียว</option>
-              <option value="YELLOW" {% if q.visit.final_severity == "YELLOW" %}selected{% endif %}>เหลือง</option>
-              <option value="RED"    {% if q.visit.final_severity == "RED" %}selected{% endif %}>แดง</option>
-            </select>
-            <button type="submit">คัดกรอง</button>
-          </form>
+              <td class="muted">{{ v.registered_at }}</td>
 
-          <!-- เรียกคิว -->
-          <form method="post" action="{% url 'call_visit' q.visit.id %}" style="display:inline;">
-            {% csrf_token %}
-            <button type="submit">เรียกคิว</button>
-          </form>
-        </td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="6">ไม่มีคิวรอ</td></tr>
-    {% endfor %}
-  </table>
+              <td>
+                <!-- คัดกรองแบบปุ่ม 3 สี (POST) -->
+                <form method="post" action="{% url 'triage_visit' v.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="severity" value="RED">
+                  <button class="btn danger" type="submit">🔴 คัดกรองแดง</button>
+                </form>
+
+                <form method="post" action="{% url 'triage_visit' v.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="severity" value="YELLOW">
+                  <button class="btn warn" type="submit">🟡 คัดกรองเหลือง</button>
+                </form>
+
+                <form method="post" action="{% url 'triage_visit' v.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="severity" value="GREEN">
+                  <button class="btn good" type="submit">🟢 คัดกรองเขียว</button>
+                </form>
+
+                <!-- เรียกคิว -->
+                <a class="btn" href="{% url 'call_visit' v.id %}">📣 เรียกคิว</a>
+              </td>
+            </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="6" class="muted">ยังไม่มีคิวรอ</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
 </body>
 </html>

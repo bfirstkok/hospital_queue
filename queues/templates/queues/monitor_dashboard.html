@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient Monitor</title>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a2e;
+      --card2:#0d1729;
+      --line:rgba(255,255,255,.08);
+      --text:#e9eefc;
+      --muted:rgba(233,238,252,.72);
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --chip:#111d33;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:24px;
+      font-family: system-ui, Segoe UI, Tahoma, sans-serif;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(59,130,246,.18), transparent 55%),
+                  radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,.14), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+
+    a{color:#93c5fd; text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    .wrap{max-width:1200px; margin:0 auto}
+    .topbar{
+      display:flex; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      gap:14px;
+      margin-bottom:16px;
+    }
+    .title{
+      display:flex; align-items:center; gap:12px;
+    }
+    .title h1{
+      margin:0; font-size:22px; letter-spacing:.2px;
+    }
+    .subtitle{margin:2px 0 0; font-size:12px; color:var(--muted)}
+
+    .actions{
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center;
+    }
+    .btn{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      border-radius:12px;
+      box-shadow: 0 6px 16px rgba(0,0,0,.18);
+    }
+    .btn:hover{background:rgba(255,255,255,.07); text-decoration:none}
+
+    .statusbar{
+      display:flex; flex-wrap:wrap; gap:10px;
+      align-items:center; justify-content:space-between;
+      margin:14px 0 16px;
+      padding:12px 14px;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:var(--chip);
+      border:1px solid var(--line);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .dot{width:8px; height:8px; border-radius:50%}
+    .dot.good{background:var(--good)}
+    .dot.warn{background:var(--warn)}
+    .dot.bad{background:var(--bad)}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+
+    .tableWrap{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      overflow:hidden;
+      box-shadow: var(--shadow);
+    }
+
+    table{width:100%; border-collapse:collapse}
+    thead th{
+      text-align:left;
+      font-size:12px;
+      color:rgba(233,238,252,.8);
+      background:rgba(255,255,255,.05);
+      padding:12px 12px;
+      border-bottom:1px solid var(--line);
+      position:sticky; top:0;
+      backdrop-filter: blur(6px);
+    }
+    tbody td{
+      padding:12px 12px;
+      border-bottom:1px solid var(--line);
+      vertical-align:top;
+      font-size:13px;
+      color:rgba(233,238,252,.92);
+    }
+    tbody tr:hover{background:rgba(255,255,255,.03)}
+
+    .sev{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+    }
+    .sev.green{color:#86efac}
+    .sev.yellow{color:#fde68a}
+    .sev.red{color:#fecaca}
+
+    .aiTag{
+      display:inline-flex;
+      padding:5px 10px;
+      border-radius:999px;
+      background:rgba(59,130,246,.12);
+      border:1px solid rgba(59,130,246,.25);
+      color:#bfdbfe;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .onlineTag{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+    .onlineTag .dot{width:9px; height:9px}
+    .onlineTag.online{color:#86efac}
+    .onlineTag.offline{color:rgba(233,238,252,.55)}
+
+    .vitals{
+      display:flex; flex-wrap:wrap; gap:8px;
+      max-width:420px;
+    }
+    .kv{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px;
+      border-radius:12px;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      font-size:12px;
+      color:rgba(233,238,252,.85);
+      white-space:nowrap;
+    }
+    .kv b{color:var(--text); font-weight:800}
+
+    .muted{color:var(--muted); font-size:12px}
+
+    .rightLink{
+      display:inline-flex;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+    }
+
+    @media (max-width: 900px){
+      body{padding:16px}
+      .vitals{max-width:none}
+      thead{display:none}
+      table, tbody, tr, td{display:block; width:100%}
+      tbody td{border-bottom:none}
+      tbody tr{border-bottom:1px solid var(--line)}
+      tbody td::before{
+        content: attr(data-label);
+        display:block;
+        font-size:11px;
+        color:var(--muted);
+        margin-bottom:4px;
+      }
+      .rightLink{width:100%; justify-content:center}
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="title">
+      <div style="font-size:26px">🩺</div>
+      <div>
+        <h1>Patient Monitor</h1>
+        <div class="subtitle">ดูสถานะผู้ป่วยจาก IoT (auto refresh)</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn" href="/">📋 กลับหน้าคิว</a>
+      <a class="btn" href="/accounts/dashboard/">🏠 Dashboard</a>
+      <a class="btn" href="/map/">🗺️ Map</a>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <div class="pill"><span class="dot good"></span>ONLINE = มีข้อมูลล่าสุดภายใน 60 วินาที</div>
+    <div class="pill"><span class="dot bad"></span>OFFLINE = เกิน 60 วินาที</div>
+    <div class="muted" id="status">กำลังโหลด...</div>
+  </div>
+
+  <div class="tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:90px">Visit</th>
+          <th>ผู้ป่วย</th>
+          <th style="width:130px">Severity</th>
+          <th style="width:120px">AI</th>
+          <th style="width:120px">Device</th>
+          <th style="width:140px">Online</th>
+          <th>Vitals ล่าสุด</th>
+          <th style="width:120px">Action</th>
+        </tr>
+      </thead>
+
+      <tbody id="rows">
+        <tr><td colspan="8" class="muted">กำลังโหลด...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  function sevClass(s){
+    if(!s) return "";
+    const x = String(s).toUpperCase();
+    if(x.includes("RED")) return "red";
+    if(x.includes("YELLOW")) return "yellow";
+    return "green";
+  }
+
+  function navUrl(lat,lng){
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+
+  async function copyText(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("คัดลอกแล้ว: " + text);
+    }catch(e){
+      prompt("คัดลอกไม่สำเร็จ คัดลอกเอง:", text);
+    }
+  }
+
+  function renderCards(items){
+    const all = items.length;
+    const online = items.filter(x => x.online).length;
+    const offline = all - online;
+
+    const red = items.filter(x => (x.severity||"").toUpperCase()==="RED").length;
+    const yellow = items.filter(x => (x.severity||"").toUpperCase()==="YELLOW").length;
+    const green = items.filter(x => (x.severity||"").toUpperCase()==="GREEN").length;
+
+    // ใช้กล่องสไตล์เดียวกับ statusbar
+    return `
+      <div style="
+        margin:0 0 14px;
+        display:grid; gap:10px;
+        grid-template-columns: repeat(6, minmax(140px, 1fr));
+      ">
+        ${card("ทั้งหมด", all)}
+        ${card("ONLINE", online, "color:#86efac")}
+        ${card("OFFLINE", offline, "color:rgba(233,238,252,.55)")}
+        ${card("RED", red, "color:#fecaca")}
+        ${card("YELLOW", yellow, "color:#fde68a")}
+        ${card("GREEN", green, "color:#86efac")}
+      </div>
+    `;
+
+    function card(label, value, extra=""){
+      return `
+        <div style="
+          padding:12px 14px;
+          background:rgba(255,255,255,.04);
+          border:1px solid var(--line);
+          border-radius: var(--radius);
+          box-shadow: 0 10px 22px rgba(0,0,0,.25);
+        ">
+          <div class="muted" style="font-size:12px">${label}</div>
+          <div style="font-size:22px;font-weight:900;margin-top:4px;${extra}">${value}</div>
+        </div>
+      `;
+    }
+  }
+
+  async function loadLatest() {
+    const elStatus = document.getElementById("status");
+    const elRows = document.getElementById("rows");
+    const elCards = document.getElementById("cards");
+
+    try {
+      const res = await fetch("/monitor/api/summary/");
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "API error");
+
+      const nowStr = new Date().toLocaleTimeString();
+      const items = data.items || [];
+
+      // summary text
+      const onlineCount = items.filter(r => r.online).length;
+      elStatus.textContent = `อัปเดตล่าสุด: ${nowStr} | Online: ${onlineCount}/${items.length}`;
+
+      // cards
+      if(elCards) elCards.innerHTML = renderCards(items);
+
+      if (items.length === 0) {
+        elRows.innerHTML = `<tr><td colspan="8" class="muted">ยังไม่มีข้อมูล</td></tr>`;
+        return;
+      }
+
+      elRows.innerHTML = items.map(r => {
+        const onlineText = r.online ? "ONLINE" : "OFFLINE";
+        const onlineCls = r.online ? "online" : "offline";
+        const dotCls = r.online ? "good" : "bad";
+
+        const sev = r.severity ?? "-";
+        const sevCss = sevClass(sev);
+
+        const v = r.vitals || {};
+        const bp = (v.sys_bp ?? "-") + "/" + (v.dia_bp ?? "-");
+
+        const g = r.gps || {};
+        const hasGps = (g.lat != null && g.lng != null);
+
+        const vitalsHtml = `
+          <div class="vitals">
+            <span class="kv"><span class="muted">BPM</span> <b>${v.bpm ?? "-"}</b></span>
+            <span class="kv"><span class="muted">O2</span> <b>${v.o2sat ?? "-"}</b></span>
+            <span class="kv"><span class="muted">BT</span> <b>${v.bt ?? "-"}</b></span>
+            <span class="kv"><span class="muted">RR</span> <b>${v.rr ?? "-"}</b></span>
+            <span class="kv"><span class="muted">BP</span> <b>${bp}</b></span>
+            ${hasGps ? `<span class="kv"><span class="muted">GPS</span> <b>${g.lat},${g.lng}</b></span>` : ``}
+          </div>
+        `;
+
+        const gpsBtns = hasGps ? `
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+            <a class="rightLink" target="_blank" href="${navUrl(g.lat,g.lng)}">เปิดนำทาง</a>
+            <a class="rightLink" href="javascript:void(0)" onclick="copyText('${g.lat},${g.lng}')">คัดลอกพิกัด</a>
+          </div>
+        ` : ``;
+
+        return `
+          <tr>
+            <td data-label="Visit">#${r.visit_id}</td>
+
+            <td data-label="ผู้ป่วย">
+              <div style="font-weight:800">${r.patient_name ?? "-"}</div>
+              <div class="muted">Visit ID: ${r.visit_id}</div>
+            </td>
+
+            <td data-label="Severity">
+              <span class="sev ${sevCss}">${sev}</span>
+            </td>
+
+            <td data-label="AI">
+              <span class="aiTag">-</span>
+            </td>
+
+            <td data-label="Device">
+              <span class="pill" style="color:var(--text)">${r.device_id ?? "-"}</span>
+            </td>
+
+            <td data-label="Online">
+              <span class="onlineTag ${onlineCls}">
+                <span class="dot ${dotCls}"></span>${onlineText}
+              </span>
+            </td>
+
+            <td data-label="Vitals ล่าสุด">
+              ${vitalsHtml}
+              ${gpsBtns}
+            </td>
+
+            <td data-label="Action">
+              <a class="rightLink" href="/monitor/visit/${r.visit_id}/">ดูรายละเอียด →</a>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+    } catch (e) {
+      elStatus.textContent = "โหลดไม่ได้: " + e.message;
+      elRows.innerHTML = `<tr><td colspan="8" class="muted">เชื่อมต่อ API ไม่สำเร็จ</td></tr>`;
+    }
+  }
+
+  loadLatest();
+  setInterval(loadLatest, 5000);
+</script>
+
+</body>
+</html>

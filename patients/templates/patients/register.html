@@ -1,22 +1,188 @@
 <!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Register</title></head>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ลงทะเบียนผู้ป่วย</title>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a2e;
+      --line:rgba(255,255,255,.08);
+      --text:#e9eefc;
+      --muted:rgba(233,238,252,.72);
+      --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 14px;
+      --focus: rgba(59,130,246,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:24px;
+      font-family: system-ui, Segoe UI, Tahoma, sans-serif;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(59,130,246,.18), transparent 55%),
+                  radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,.14), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:980px; margin:0 auto}
+
+    a{color:#93c5fd; text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    .topbar{
+      display:flex; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .title{display:flex;align-items:center;gap:10px}
+    .title h1{margin:0;font-size:22px}
+    .subtitle{margin:2px 0 0;font-size:12px;color:var(--muted)}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;border:1px solid var(--line);
+      background:rgba(255,255,255,.04);color:var(--text);
+      border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.18);
+      cursor:pointer;
+    }
+    .btn:hover{background:rgba(255,255,255,.07);text-decoration:none}
+    .btn.primary{
+      border-color: rgba(59,130,246,.35);
+      background: rgba(59,130,246,.18);
+    }
+    .btn.primary:hover{background: rgba(59,130,246,.26)}
+    .btn.ghost{background:transparent}
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:var(--shadow); padding:16px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-top:10px;
+    }
+    .field{display:flex; flex-direction:column; gap:6px}
+    label{font-size:12px; color:var(--muted)}
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      outline:none;
+    }
+    input::placeholder{color:rgba(233,238,252,.45)}
+    input:focus{
+      border-color: rgba(59,130,246,.55);
+      box-shadow: 0 0 0 4px var(--focus);
+    }
+
+    .hint{
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    .footer{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .alert{
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(239,68,68,.35);
+      background: rgba(239,68,68,.10);
+      color: rgba(254,226,226,.95);
+      font-size:13px;
+    }
+
+    @media (max-width: 820px){
+      body{padding:16px}
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+
 <body>
-  <h2>ลงทะเบียนผู้ป่วย + เปิด Visit</h2>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <div style="font-size:26px">🧾</div>
+      <div>
+        <h1>ลงทะเบียนผู้ป่วย</h1>
+        <div class="subtitle">เพิ่มผู้ป่วยใหม่เพื่อสร้าง Visit/Queue ต่อได้</div>
+      </div>
+    </div>
 
-  <form method="post">
-    {% csrf_token %}
+    <div class="actions">
+      <a class="btn" href="/">📋 กลับหน้าคิว</a>
+      <a class="btn" href="/accounts/dashboard/">📊 Dashboard</a>
+    </div>
+  </div>
 
-    <h3>ข้อมูลผู้ป่วย</h3>
-    {{ patient_form.as_p }}
+  <div class="card">
+    {# ถ้า view ส่ง error มาให้แสดง #}
+    {% if error %}
+      <div class="alert">❌ {{ error }}</div>
+    {% endif %}
 
-    <h3>สัญญาณชีพ</h3>
-    {{ vital_form.as_p }}
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
 
-    <button type="submit">บันทึกและเข้าคิว</button>
-  </form>
+      <div class="grid">
+        <div class="field">
+          <label for="first_name">ชื่อ</label>
+          <input id="first_name" name="first_name" required placeholder="เช่น สมชาย"
+                 value="{{ first_name|default:'' }}">
+        </div>
 
-  <hr>
-  <a href="{% url 'queue_list' %}">ไปหน้าคิวรอ</a>
+        <div class="field">
+          <label for="last_name">นามสกุล</label>
+          <input id="last_name" name="last_name" required placeholder="เช่น ใจดี"
+                 value="{{ last_name|default:'' }}">
+        </div>
+
+        <div class="field" style="grid-column: span 2;">
+          <label for="national_id">เลขบัตรประชาชน</label>
+          <input id="national_id" name="national_id" required inputmode="numeric"
+                 placeholder="13 หลัก (ไม่ต้องใส่ขีด) เช่น 1101700234567"
+                 value="{{ national_id|default:'' }}">
+          <div class="hint">
+            • แนะนำ: ตรวจซ้ำไม่ให้ลงทะเบียนซ้ำ <br>
+            • ถ้าจะทำเดโม: ใส่เลขสุ่ม 13 หลักได้ (แต่ควรกันซ้ำใน backend)
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <button class="btn primary" type="submit">✅ บันทึกผู้ป่วย</button>
+        <a class="btn ghost" href="/">ยกเลิก</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // auto-format เบา ๆ: ตัดช่องว่าง
+  const nid = document.getElementById("national_id");
+  if(nid){
+    nid.addEventListener("input", () => {
+      nid.value = nid.value.replace(/\s+/g, "");
+    });
+  }
+</script>
+
 </body>
 </html>
