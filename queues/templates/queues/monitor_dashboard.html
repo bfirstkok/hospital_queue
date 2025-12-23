@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="th">
+<head>
+  {% load static %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient Monitor</title>
+  <link rel="stylesheet" href="{% static 'css/monitor_dashboard.css' %}?v=8">
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="title pill-title">
+      <div class="icon">🩺</div>
+      <div>
+        <h1>Patient Monitor</h1>
+        <div class="subtitle">ดูสถานะผู้ป่วยจาก IoT (auto refresh)</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn" href="/">📋 กลับหน้าคิว</a>
+      <a class="btn" href="/accounts/dashboard/">🏠 Dashboard</a>
+      <a class="btn" href="/map/">🗺️ Map</a>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <div class="pill"><span class="dot good"></span>ONLINE = มีข้อมูลล่าสุดภายใน 60 วินาที</div>
+    <div class="pill"><span class="dot bad"></span>OFFLINE = เกิน 60 วินาที</div>
+    <div class="muted" id="status">กำลังโหลด...</div>
+  </div>
+
+  <div class="tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:90px">Visit</th>
+          <th>ผู้ป่วย</th>
+          <th style="width:130px">Severity</th>
+          <th style="width:120px">AI</th>
+          <th style="width:120px">Device</th>
+          <th style="width:140px">Online</th>
+          <th>Vitals ล่าสุด</th>
+          <th style="width:120px">Action</th>
+        </tr>
+      </thead>
+
+      <tbody id="rows">
+        <tr><td colspan="8" class="muted">กำลังโหลด...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  function sevClass(s){
+    if(!s) return "";
+    const x = String(s).toUpperCase();
+    if(x.includes("RED")) return "red";
+    if(x.includes("YELLOW")) return "yellow";
+    return "green";
+  }
+
+  function navUrl(lat,lng){
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+
+  async function copyText(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("คัดลอกแล้ว: " + text);
+    }catch(e){
+      prompt("คัดลอกไม่สำเร็จ คัดลอกเอง:", text);
+    }
+  }
+
+  function renderCards(items){
+    const all = items.length;
+    const online = items.filter(x => x.online).length;
+    const offline = all - online;
+
+    const red = items.filter(x => (x.severity||"").toUpperCase()==="RED").length;
+    const yellow = items.filter(x => (x.severity||"").toUpperCase()==="YELLOW").length;
+    const green = items.filter(x => (x.severity||"").toUpperCase()==="GREEN").length;
+
+    // ใช้กล่องสไตล์เดียวกับ statusbar
+    return `
+      <div style="
+        margin:0 0 14px;
+        display:grid; gap:10px;
+        grid-template-columns: repeat(6, minmax(140px, 1fr));
+      ">
+        ${card("ทั้งหมด", all)}
+        ${card("ONLINE", online, "color:#86efac")}
+        ${card("OFFLINE", offline, "color:rgba(233,238,252,.55)")}
+        ${card("RED", red, "color:#fecaca")}
+        ${card("YELLOW", yellow, "color:#fde68a")}
+        ${card("GREEN", green, "color:#86efac")}
+      </div>
+    `;
+
+    function card(label, value, extra=""){
+      return `
+        <div style="
+          padding:12px 14px;
+          background:rgba(255,255,255,.04);
+          border:1px solid var(--line);
+          border-radius: var(--radius);
+          box-shadow: 0 10px 22px rgba(0,0,0,.25);
+        ">
+          <div class="muted" style="font-size:12px">${label}</div>
+          <div style="font-size:22px;font-weight:900;margin-top:4px;${extra}">${value}</div>
+        </div>
+      `;
+    }
+  }
+
+  async function loadLatest() {
+    const elStatus = document.getElementById("status");
+    const elRows = document.getElementById("rows");
+    const elCards = document.getElementById("cards");
+
+    try {
+      const res = await fetch("/monitor/api/summary/");
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "API error");
+
+      const nowStr = new Date().toLocaleTimeString();
+      const items = data.items || [];
+
+      // summary text
+      const onlineCount = items.filter(r => r.online).length;
+      elStatus.textContent = `อัปเดตล่าสุด: ${nowStr} | Online: ${onlineCount}/${items.length}`;
+
+      // cards
+      if(elCards) elCards.innerHTML = renderCards(items);
+
+      if (items.length === 0) {
+        elRows.innerHTML = `<tr><td colspan="8" class="muted">ยังไม่มีข้อมูล</td></tr>`;
+        return;
+      }
+
+      elRows.innerHTML = items.map(r => {
+        const onlineText = r.online ? "ONLINE" : "OFFLINE";
+        const onlineCls = r.online ? "online" : "offline";
+        const dotCls = r.online ? "good" : "bad";
+
+        const sev = r.severity ?? "-";
+        const sevCss = sevClass(sev);
+
+        const v = r.vitals || {};
+        const bp = (v.sys_bp ?? "-") + "/" + (v.dia_bp ?? "-");
+
+        const g = r.gps || {};
+        const hasGps = (g.lat != null && g.lng != null);
+
+        const vitalsHtml = `
+          <div class="vitals">
+            <span class="kv"><span class="muted">BPM</span> <b>${v.bpm ?? "-"}</b></span>
+            <span class="kv"><span class="muted">O2</span> <b>${v.o2sat ?? "-"}</b></span>
+            <span class="kv"><span class="muted">BT</span> <b>${v.bt ?? "-"}</b></span>
+            <span class="kv"><span class="muted">RR</span> <b>${v.rr ?? "-"}</b></span>
+            <span class="kv"><span class="muted">BP</span> <b>${bp}</b></span>
+            ${hasGps ? `<span class="kv"><span class="muted">GPS</span> <b>${g.lat},${g.lng}</b></span>` : ``}
+          </div>
+        `;
+
+        const gpsBtns = hasGps ? `
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+            <a class="rightLink" target="_blank" href="${navUrl(g.lat,g.lng)}">เปิดนำทาง</a>
+            <a class="rightLink" href="javascript:void(0)" onclick="copyText('${g.lat},${g.lng}')">คัดลอกพิกัด</a>
+          </div>
+        ` : ``;
+
+        return `
+          <tr>
+            <td data-label="Visit">#${r.visit_id}</td>
+
+            <td data-label="ผู้ป่วย">
+              <div style="font-weight:800">${r.patient_name ?? "-"}</div>
+              <div class="muted">Visit ID: ${r.visit_id}</div>
+            </td>
+
+            <td data-label="Severity">
+              <span class="sev ${sevCss}">${sev}</span>
+            </td>
+
+            <td data-label="AI">
+              <span class="aiTag">-</span>
+            </td>
+
+            <td data-label="Device">
+              <span class="pill" style="color:var(--text)">${r.device_id ?? "-"}</span>
+            </td>
+
+            <td data-label="Online">
+              <span class="onlineTag ${onlineCls}">
+                <span class="dot ${dotCls}"></span>${onlineText}
+              </span>
+            </td>
+
+            <td data-label="Vitals ล่าสุด">
+              ${vitalsHtml}
+              ${gpsBtns}
+            </td>
+
+            <td data-label="Action">
+              <a class="rightLink" href="/monitor/visit/${r.visit_id}/">ดูรายละเอียด →</a>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+    } catch (e) {
+      elStatus.textContent = "โหลดไม่ได้: " + e.message;
+      elRows.innerHTML = `<tr><td colspan="8" class="muted">เชื่อมต่อ API ไม่สำเร็จ</td></tr>`;
+    }
+  }
+
+  loadLatest();
+  setInterval(loadLatest, 5000);
+</script>
+
+</body>
+</html>

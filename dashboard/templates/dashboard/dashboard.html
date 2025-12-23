@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="th">
+<head>
+  {% load static %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=4">
+
+</head>
+
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="pill-title">
+      <div class="icon">📊</div>
+      <div>
+        <h1>Dashboard</h1>
+        <div class="subtitle">
+          ศูนย์รวมระบบคิว + Monitor + Map (auto refresh)
+        </div>
+      </div>
+    </div>
+
+
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a class="btn" href="/">📋 Queue</a>
+      <a class="btn" href="/monitor/">🩺 Monitor</a>
+      <a class="btn" href="/map/">🗺️ Map</a>
+      <a class="btn" href="/accounts/login/">🚪 Logout</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- KPI -->
+    <div class="card span4">
+      <div class="kpi">
+        <div>
+          <div class="label">คิวรอ (WAITING)</div>
+          <div class="val">{{ waiting_total }}</div>
+        </div>
+        <div class="pill"><span class="dot warn"></span>Live</div>
+      </div>
+      <div class="chips">
+        <span class="chip"><span class="dot bad"></span>RED: {{ red_total }}</span>
+        <span class="chip"><span class="dot warn"></span>YELLOW: {{ yellow_total }}</span>
+        <span class="chip"><span class="dot good"></span>GREEN: {{ green_total }}</span>
+      </div>
+    </div>
+
+    <div class="card span4">
+      <div class="kpi">
+        <div>
+          <div class="label">เรียกแล้ว (CALLED)</div>
+          <div class="val">{{ called_total }}</div>
+        </div>
+        <div class="pill"><span class="dot good"></span>OK</div>
+      </div>
+      <div class="muted">อัปเดตจากฐานข้อมูล ณ {{ now }}</div>
+    </div>
+
+    <div class="card span4">
+      <div class="kpi">
+        <div>
+          <div class="label">Online จาก IoT</div>
+          <div class="val" id="onlineCount">-</div>
+        </div>
+        <div class="pill"><span class="dot good"></span>60s</div>
+      </div>
+      <div class="muted" id="serverTime">กำลังโหลดจาก /monitor/api/summary/ ...</div>
+    </div>
+
+    <!-- Latest list -->
+    <div class="card span12">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:900;font-size:16px">รายการล่าสุด (Top 12)</div>
+          <div class="muted">ดึงจาก monitor summary API</div>
+        </div>
+        <div class="pill" id="lastRefresh"><span class="dot warn"></span>กำลังโหลด...</div>
+      </div>
+
+      <div style="overflow:auto;margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th>Visit</th>
+              <th>ผู้ป่วย</th>
+              <th>Severity</th>
+              <th>Online</th>
+              <th>Spark BPM</th>
+              <th>Spark O2</th>
+              <th>Vitals</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="6" class="muted">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function vitalsText(v){
+    if(!v) return "-";
+    const bp = (v.sys_bp ?? "-") + "/" + (v.dia_bp ?? "-");
+    return `BPM ${v.bpm ?? "-"} | O2 ${v.o2sat ?? "-"} | BT ${v.bt ?? "-"} | RR ${v.rr ?? "-"} | BP ${bp}`;
+  }
+
+  function sparkSVG(values, w=110, h=26){
+    if(!values || values.length < 2) return `<span class="muted">-</span>`;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const pad = 2;
+    const dx = (w - pad*2) / (values.length - 1);
+    const scale = (v) => {
+      if(max === min) return h/2;
+      return h - pad - ((v - min) / (max - min)) * (h - pad*2);
+    };
+
+    const pts = values.map((v,i)=> `${pad + i*dx},${scale(v).toFixed(1)}`).join(" ");
+    return `
+      <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+        <polyline fill="none" stroke="currentColor" stroke-width="2" points="${pts}" opacity="0.9"/>
+        <circle cx="${pad + (values.length-1)*dx}" cy="${scale(values[values.length-1]).toFixed(1)}" r="2.5" fill="currentColor"/>
+      </svg>
+    `;
+  }
+
+  async function loadSparklines(visitIds){
+    if(!visitIds.length) return;
+    const qs = visitIds.join(",");
+    const res = await fetch(`/monitor/api/sparklines/?visit_ids=${qs}`);
+    const data = await res.json();
+    if(!data.ok) return;
+
+    for(const vid of visitIds){
+      const s = data.series?.[String(vid)];
+      const elBpm = document.getElementById(`spark-bpm-${vid}`);
+      const elO2  = document.getElementById(`spark-o2-${vid}`);
+      if(elBpm) elBpm.innerHTML = sparkSVG(s?.bpm);
+      if(elO2)  elO2.innerHTML  = sparkSVG(s?.o2);
+    }
+  }
+
+  async function loadSummary(){
+    const elRows = document.getElementById("rows");
+    const elOnline = document.getElementById("onlineCount");
+    const elServer = document.getElementById("serverTime");
+    const elRefresh = document.getElementById("lastRefresh");
+
+    try{
+      const res = await fetch("/monitor/api/summary/");
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || "API error");
+
+      const items = data.items || [];
+      const online = items.filter(x => x.online).length;
+
+      elOnline.textContent = online;
+      elServer.textContent = "Server time: " + (data.server_time || "-");
+      elRefresh.innerHTML = `<span class="dot good"></span>อัปเดตล่าสุด: ${new Date().toLocaleTimeString()}`;
+
+      const top = items.slice(0, 12);
+      if(top.length === 0){
+        elRows.innerHTML = `<tr><td colspan="8" class="muted">ยังไม่มีข้อมูล</td></tr>`;
+        return;
+      }
+
+      // 1) render rows ก่อน
+      elRows.innerHTML = top.map(x => {
+        const onlinePill = x.online
+          ? `<span class="pill"><span class="dot good"></span>ONLINE</span>`
+          : `<span class="pill"><span class="dot bad"></span>OFFLINE</span>`;
+
+        return `
+          <tr>
+            <td>#${x.visit_id}</td>
+            <td>${x.patient_name ?? "-"}</td>
+            <td>${x.severity ?? "-"}</td>
+            <td>${onlinePill}</td>
+
+            <td><div id="spark-bpm-${x.visit_id}" class="muted">-</div></td>
+            <td><div id="spark-o2-${x.visit_id}" class="muted">-</div></td>
+
+            <td class="muted">${vitalsText(x.vitals)}</td>
+            <td><a class="btn" style="padding:8px 10px" href="/monitor/visit/${x.visit_id}/">ดู</a></td>
+          </tr>
+        `;
+      }).join("");
+
+      // 2) แล้วค่อยโหลด sparkline ทีเดียว
+      const visitIds = top.map(x => x.visit_id);
+      loadSparklines(visitIds);
+
+    }catch(e){
+      elRefresh.innerHTML = `<span class="dot bad"></span>โหลดไม่ได้: ${e.message}`;
+      elRows.innerHTML = `<tr><td colspan="8" class="muted">เชื่อมต่อ API ไม่สำเร็จ</td></tr>`;
+    }
+  }
+
+  loadSummary();
+  setInterval(loadSummary, 5000);
+
+   function getCookie(name){
+    const v = `; ${document.cookie}`;
+    const parts = v.split(`; ${name}=`);
+    if(parts.length === 2) return parts.pop().split(';').shift();
+  }
+
+  document.getElementById("btnDemo")?.addEventListener("click", async () => {
+    try{
+      const csrftoken = getCookie("csrftoken");
+      const res = await fetch("/dashboard/api/demo-create/", {
+        method: "POST",
+        headers: { "X-CSRFToken": csrftoken }
+      });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || "สร้างไม่สำเร็จ");
+
+      alert(`สร้างเดโมสำเร็จ ✅ Visit #${data.visit_id} (${data.severity})`);
+      loadSummary(); // รีเฟรชตาราง + sparkline ทันที
+    }catch(e){
+      alert("สร้างเดโมไม่สำเร็จ: " + e.message);
+    }
+  });
+</script>
+
+</body>
+</html>

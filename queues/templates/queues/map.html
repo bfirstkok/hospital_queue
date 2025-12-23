@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+<head>
+  {% load static %}
+  <meta charset="utf-8">
+  <title>Patient Map</title>
+  <link rel="stylesheet" href="{% static 'css/map.css' %}?v=2">
+  <!-- Leaflet (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="title pill-title">
+      <div class="icon">🗺️</div>
+      <div>
+        <h1>Patient Map</h1>
+        <div class="subtitle">ตำแหน่งผู้ป่วยจาก IoT (Realtime)</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn" href="/">📋 คิว</a>
+      <a class="btn" href="/monitor/">🩺 Monitor</a>
+      <button class="btn primary" id="btnRefresh">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <span class="pill">⏱ อัปเดตล่าสุด: <b id="serverTime">-</b></span>
+    <span class="pill">📍 จำนวนหมุด: <b id="count">0</b></span>
+    <span class="small">Auto refresh ทุก 5 วินาที</span>
+  </div>
+
+  <div id="map"></div>
+
+</div>
+
+
+  <script>
+    // ตั้งค่าเริ่มต้น (ขอนแก่นโดยประมาณ)
+    const DEFAULT_CENTER = [16.4419, 102.8350];
+    const DEFAULT_ZOOM = 13;
+
+    const map = L.map('map').setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let markers = [];
+
+    function clearMarkers() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+    }
+
+    async function loadMap() {
+      try {
+        const res = await fetch("/monitor/api/summary/"); // เราจะใช้ API ตัวนี้
+        const data = await res.json();
+        if (!data.ok) throw new Error("API error");
+
+        document.getElementById("serverTime").textContent =
+          new Date(data.server_time).toLocaleString();
+
+        const items = data.items || [];
+        clearMarkers();
+
+        let first = null;
+        let count = 0;
+
+        for (const x of items) {
+          const lat = x.gps?.lat;
+          const lng = x.gps?.lng;
+          if (lat == null || lng == null) continue;
+
+          count++;
+          if (!first) first = [lat, lng];
+
+          const sev = x.severity || "-";
+          const online = x.online ? "ONLINE" : "OFFLINE";
+          const vs = x.vitals || {};
+          const bp = `${vs.sys_bp ?? "-"} / ${vs.dia_bp ?? "-"}`;
+
+          const html = `
+            <div style="min-width:240px">
+              <div><b>#${x.visit_id}</b> ${x.patient_name}</div>
+              <div>Severity: <b>${sev}</b> | <b>${online}</b></div>
+              <hr>
+              <div>BPM: ${vs.bpm ?? "-"} | O2: ${vs.o2sat ?? "-"} | BT: ${vs.bt ?? "-"}</div>
+              <div>RR: ${vs.rr ?? "-"} | BP: ${bp}</div>
+              <div style="margin-top:8px">
+                <a href="/monitor/visit/${x.visit_id}/">ดูรายละเอียด</a>
+              </div>
+              <div style="margin-top:6px; color:#666; font-size:12px">
+                GPS updated: ${x.gps?.updated_at ? new Date(x.gps.updated_at).toLocaleString() : "-"}
+              </div>
+            </div>
+          `;
+
+          const marker = L.marker([lat, lng]).addTo(map).bindPopup(html);
+          markers.push(marker);
+        }
+
+        document.getElementById("count").textContent = count;
+
+        if (first) {
+          map.setView(first, DEFAULT_ZOOM);
+        }
+
+      } catch (e) {
+        console.error(e);
+        alert("โหลดแผนที่ไม่สำเร็จ: " + e.message);
+      }
+    }
+
+    document.getElementById("btnRefresh").addEventListener("click", loadMap);
+
+    loadMap();
+    setInterval(loadMap, 5000);
+  </script>
+</body>
+</html>

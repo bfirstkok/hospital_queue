@@ -1,0 +1,224 @@
+body {
+    font-family: "Segoe UI", "Noto Sans Thai", sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    background-attachment: fixed;
+    /* Background image + overlay */
+    background:
+    linear-gradient(
+        rgba(255, 255, 255, 0.7),
+        rgba(255, 255, 255, 0.7)
+    ),
+    url("../images/login-bg.jpg") center / cover no-repeat;
+
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* กล่อง Login */
+.login-box {
+    width: 380px;
+    padding: 36px 40px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    border-top: 6px solid #1976d2;
+    animation: fadeInUp 0.6s ease;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    animation: floatIn 0.8s ease-out;
+}
+
+@keyframes floatIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+
+
+/* หัวข้อ */
+.login-box h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #1976d2;
+    font-weight: 600;
+}
+
+/* label */
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* input */
+input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+
+    border-radius: 8px;
+    border: 1px solid #cfd8dc;
+    font-size: 14px;
+
+    transition: border 0.2s, box-shadow 0.2s;
+}
+
+input:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+    animation: focusPulse 0.4s ease;
+}
+@keyframes focusPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(25,118,210,0.25);
+    }
+    100% {
+        box-shadow: 0 0 0 6px rgba(25,118,210,0);
+    }
+}
+
+/* ปุ่ม */
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    transition: transform .15s ease, box-shadow .15s;
+    background: #1976d2;
+    color: #ffffff;
+
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+button:hover {
+    background: #1565c0;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+/* error */
+.error {
+    background: #ffebee;
+    color: #c62828;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+/* footer */
+.login-footer {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 13px;
+    color: #607d8b;
+}
+/* UX Enhancements */
+
+.password-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    margin-top: -5px;
+}
+
+/* Button loading */
+#loginBtn {
+    position: relative;
+}
+
+#loginBtn .btn-loading {
+    display: none;
+}
+
+#loginBtn.loading .btn-text {
+    display: none;
+}
+
+#loginBtn.loading .btn-loading {
+    display: inline;
+}
+
+/* Input focus */
+input:focus {
+    outline: none;
+    border-color: #0277bd;
+    box-shadow: 0 0 0 2px rgba(2,119,189,0.2);
+}
+
+/* Mobile friendly */
+@media (max-width: 480px) {
+    .login-box {
+        width: 90%;
+        padding: 20px;
+    }
+}
+
+/* Show password UX */
+.password-tools {
+    margin-top: 6px;
+    margin-bottom: 14px;
+}
+
+.show-password {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+
+    cursor: pointer;
+    user-select: none;
+}
+
+.show-password input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #1976d2;
+}
+
+.caps-warning {
+    color: #c62828;
+    font-size: 13px;
+    margin-top: -8px;
+    margin-bottom: 10px;
+}
+
+.login-image {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.login-image img {
+    width: 100px;
+    padding: 14px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 6px 20px rgba(25,118,210,0.25);
+}

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="th">
+<head>
+  {% load static %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visit Detail</title>
+  <link rel="stylesheet" href="{% static 'css/monitor_visit.css' %}?v=2">
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="title pill-title">
+      <h1>รายละเอียด Visit #{{ visit.id }}</h1>
+      <div class="subtitle">
+        ผู้ป่วย: {{ visit.patient.first_name }} {{ visit.patient.last_name }}
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn" href="/monitor/">🩺 กลับหน้า Monitor</a>
+      <a class="btn" href="/">📋 กลับหน้าคิว</a>
+      <a class="btn" href="/map/">🗺️ Map</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Visit info -->
+    <div class="card">
+      <h3>ข้อมูล Visit</h3>
+
+      <div class="row">
+        <span class="pill">👤 <b style="color:var(--text)">{{ visit.patient.first_name }} {{ visit.patient.last_name }}</b></span>
+        <span class="pill">🆔 <span class="mono">Visit {{ visit.id }}</span></span>
+
+        {% with sev=visit.final_severity|upper %}
+          <span class="sev
+            {% if sev == 'RED' %}red{% elif sev == 'YELLOW' %}yellow{% else %}green{% endif %}
+          ">Severity: {{ visit.final_severity }}</span>
+        {% endwith %}
+      </div>
+
+      <div class="row">
+        <span class="pill">📝 registered_at: <span class="mono">{{ visit.registered_at }}</span></span>
+        <span class="pill">✅ triaged_at: <span class="mono">{{ visit.triaged_at|default:"-" }}</span></span>
+        <span class="pill">📣 called_at: <span class="mono">{{ visit.called_at|default:"-" }}</span></span>
+      </div>
+
+      <div class="muted" style="margin-top:10px">
+        หมายเหตุ: หน้านี้ดึง Telemetry log ย้อนหลัง (ล่าสุด 50 รายการ) เพื่อดูแนวโน้มสัญญาณชีพและพิกัด
+      </div>
+    </div>
+
+    <!-- Latest summary from logs[0] -->
+    <div class="card">
+      <h3>Vitals ล่าสุด</h3>
+
+      {% if logs %}
+        {% with x=logs.0 %}
+          <div class="kvgrid">
+            <div class="kv"><div class="k">BPM</div><div class="v">{{ x.bpm|default:"-" }}</div></div>
+            <div class="kv"><div class="k">O2Sat</div><div class="v">{{ x.o2sat|default:"-" }} <small>%</small></div></div>
+            <div class="kv"><div class="k">BT</div><div class="v">{{ x.bt|default:"-" }} <small>°C</small></div></div>
+            <div class="kv"><div class="k">RR</div><div class="v">{{ x.rr|default:"-" }}</div></div>
+            <div class="kv">
+              <div class="k">BP</div>
+              <div class="v">
+                {% if x.sys_bp %}{{ x.sys_bp }}{% else %}-{% endif %}/{% if x.dia_bp %}{{ x.dia_bp }}{% else %}-{% endif %}
+              </div>
+            </div>
+            <div class="kv">
+              <div class="k">Device</div>
+              <div class="v" style="font-size:14px">
+                {% if x.device %}<span class="mono">{{ x.device.device_id }}</span>{% else %}-{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <span class="pill">⏱️ ล่าสุดเวลา: <span class="mono">{{ x.ts }}</span></span>
+            <span class="pill">📍 Lat: <span class="mono">{{ x.lat|default:"-" }}</span></span>
+            <span class="pill">📍 Lng: <span class="mono">{{ x.lng|default:"-" }}</span></span>
+
+            {% if x.lat and x.lng %}
+              <a class="btn" style="padding:8px 10px" target="_blank"
+                 href="https://www.google.com/maps?q={{ x.lat }},{{ x.lng }}">
+                เปิดใน Google Maps ↗
+              </a>
+            {% endif %}
+          </div>
+        {% endwith %}
+      {% else %}
+        <div class="muted">ยังไม่มีข้อมูลจาก IoT</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th>เวลา (ts)</th>
+          <th>BPM</th>
+          <th>O2Sat</th>
+          <th>BT</th>
+          <th>RR</th>
+          <th>BP</th>
+          <th>Lat</th>
+          <th>Lng</th>
+          <th>Device</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for x in logs %}
+          <tr>
+            <td data-label="เวลา (ts)" class="mono">{{ x.updated_at }}</td>
+            <td data-label="BPM">{{ x.bpm|default:"-" }}</td>
+            <td data-label="O2Sat">{{ x.o2sat|default:"-" }}</td>
+            <td data-label="BT">{{ x.bt|default:"-" }}</td>
+            <td data-label="RR">{{ x.rr|default:"-" }}</td>
+            <td data-label="BP">
+              {% if x.sys_bp %}{{ x.sys_bp }}{% else %}-{% endif %}/{% if x.dia_bp %}{{ x.dia_bp }}{% else %}-{% endif %}
+            </td>
+            <td data-label="Lat" class="mono">{{ x.lat|default:"-" }}</td>
+            <td data-label="Lng" class="mono">{{ x.lng|default:"-" }}</td>
+            <td data-label="Device">
+              {% if x.device %}<span class="mono">{{ x.device.device_id }}</span>{% else %}-{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="9" class="muted">ยังไม่มีข้อมูลจาก IoT</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>
