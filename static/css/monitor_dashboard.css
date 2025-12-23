@@ -1,0 +1,281 @@
+:root{
+  /* ===== Medical Color System ===== */
+  --bg-main:#f5f9ff;
+  --bg-grad1:#e6f0ff;
+  --bg-grad2:#eefcf7;
+
+  --card:#ffffff;
+  --card-soft:rgba(255,255,255,.75);
+
+  --line:rgba(15,23,42,.12);
+
+  --text:#0f172a;
+  --muted:#64748b;
+
+  --primary:#2563eb;     /* medical blue */
+  --good:#10b981;        /* green */
+  --warn:#f59e0b;        /* yellow */
+  --bad:#ef4444;         /* red */
+
+  --chip:#f1f5f9;
+  --radius:16px;
+  --shadow:0 10px 30px rgba(2,6,23,.12);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  padding:24px;
+  font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+
+  background:
+    radial-gradient(900px 500px at 10% 0%, var(--bg-grad1), transparent 60%),
+    radial-gradient(800px 500px at 90% 20%, var(--bg-grad2), transparent 60%),
+    var(--bg-main);
+
+  color:var(--text);
+}
+
+/* ===== Links ===== */
+a{color:var(--primary); text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ===== Layout ===== */
+.wrap{max-width:1200px; margin:0 auto}
+
+.topbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:18px;
+}
+
+.title{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.title h1{
+  margin:0;
+  font-size:24px;
+  font-weight:900;
+}
+.subtitle{
+  font-size:13px;
+  color:var(--muted);
+}
+
+/* ===== Buttons ===== */
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border-radius:999px;
+  background:var(--card);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  font-weight:700;
+  color:var(--text);
+}
+.btn:hover{
+  background:#f8fafc;
+}
+
+/* ===== Status Bar ===== */
+.statusbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:16px 0;
+  padding:14px 16px;
+
+  background:var(--card-soft);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+
+/* ===== Pills ===== */
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  border-radius:999px;
+  background:var(--chip);
+  border:1px solid var(--line);
+  font-size:12px;
+  font-weight:700;
+  color:var(--text);
+}
+
+.dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+}
+.dot.good{background:var(--good)}
+.dot.warn{background:var(--warn)}
+.dot.bad{background:var(--bad)}
+
+/* ===== Table ===== */
+.tableWrap{
+  background:var(--card-soft);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+thead th{
+  padding:14px 12px;
+  font-size:12px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  background:#f1f5f9;
+  color:#334155;
+  border-bottom:1px solid var(--line);
+}
+
+tbody td{
+  padding:14px 12px;
+  border-bottom:1px solid var(--line);
+  font-size:14px;
+}
+tbody tr:hover{
+  background:#f8fafc;
+}
+
+/* ===== Severity ===== */
+.sev{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 14px;
+  border-radius:999px;
+  font-weight:900;
+  font-size:12px;
+}
+.sev.green{
+  background:rgba(16,185,129,.12);
+  color:var(--good);
+}
+.sev.yellow{
+  background:rgba(245,158,11,.14);
+  color:var(--warn);
+}
+.sev.red{
+  background:rgba(239,68,68,.14);
+  color:var(--bad);
+}
+
+/* ===== Online ===== */
+.onlineTag{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  border-radius:999px;
+  font-weight:800;
+  font-size:12px;
+}
+.onlineTag.online{
+  background:rgba(16,185,129,.12);
+  color:var(--good);
+}
+.onlineTag.offline{
+  background:#f1f5f9;
+  color:var(--muted);
+}
+
+/* ===== Vitals ===== */
+.vitals{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.kv{
+  padding:6px 10px;
+  border-radius:10px;
+  background:#f8fafc;
+  border:1px solid var(--line);
+  font-size:12px;
+}
+.kv b{
+  font-weight:900;
+}
+
+/* ===== Misc ===== */
+.muted{color:var(--muted); font-size:12px}
+
+.rightLink{
+  display:inline-flex;
+  padding:8px 12px;
+  border-radius:10px;
+  background:#f1f5f9;
+  border:1px solid var(--line);
+  font-weight:700;
+}
+
+/* ===== Mobile ===== */
+@media (max-width:900px){
+  body{padding:16px}
+  thead{display:none}
+  table,tbody,tr,td{display:block;width:100%}
+  tbody tr{border-bottom:1px solid var(--line)}
+  tbody td::before{
+    content:attr(data-label);
+    display:block;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+}
+
+   .pill-title{
+  display:flex;
+  align-items:center;
+  gap:12px;
+
+  padding:10px 18px;
+  border-radius:999px;
+
+  background: linear-gradient(
+    180deg,
+    #ffffff,
+    #f1f8ff
+  );
+
+  border:1px solid rgba(15,23,42,.1);
+  box-shadow:0 6px 18px rgba(15,23,42,.12);
+}
+
+.pill-title h1{
+  margin:0;
+  font-size:20px;
+  font-weight:800;
+}
+
+.pill-title .subtitle{
+  font-size:12px;
+  color:#64748b;
+}
+
+.pill-title .icon{
+  font-size:24px;
+}
