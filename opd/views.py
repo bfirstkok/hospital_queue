@@ -8,7 +8,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.db.models import OuterRef, Subquery
 
-from queues.models import Queue, Visit, TelemetryLog
+from queues.models import Queue, Visit, TelemetryLog, VitalSign
 from .models import VisitAssessment
 from .forms import VisitAssessmentForm
 
@@ -74,32 +74,20 @@ def visit_assessment(request, visit_id: int):
                 visit.triaged_at = visit.triaged_at or timezone.now()
                 visit.save(update_fields=["final_severity", "triaged_at"])
 
-            # 1) ปิดคิว OPD
-            q.status = "OPD_DONE"
-            q.save(update_fields=["status"])
-
-            # 2) ถ้ามีนัดครั้งต่อไป -> สร้าง followup visit + queue(FOLLOWUP) (กันซ้ำ)
+            # ตรวจสอบว่ามีนัดครั้งต่อไปหรือไม่
             next_appt = getattr(assessment, "next_appointment_at", None)
 
-            # ต้องมี field followup_visit จริง (ForeignKey ไป Visit) ใน VisitAssessment
-            followup_id = getattr(assessment, "followup_visit_id", None)
+            if next_appt:
+                # ถ้ามีนัด -> เปลี่ยน Queue status เป็น FOLLOWUP (ใช้ Visit เดิม)
+                q.status = "FOLLOWUP"
+                q.save(update_fields=["status"])
+            else:
+                # ถ้าไม่มีนัด -> ปิดคิว OPD
+                q.status = "OPD_DONE"
+                q.save(update_fields=["status"])
 
-            if next_appt and followup_id is None:
-                followup_visit = Visit.objects.create(
-                    patient=visit.patient,
-                    final_severity="GREEN",
-                )
-
-                Queue.objects.create(
-                    visit=followup_visit,
-                    status="FOLLOWUP",
-                    priority=3,
-                )
-
-                assessment.followup_visit = followup_visit
-                assessment.save(update_fields=["followup_visit"])
-
-            return redirect("opd_list")
+            # Redirect ไปหน้ารายละเอียด Visit เพื่อให้เห็น Assessment ที่บันทึกไป
+            return redirect("opd_visit_detail", visit_id=visit.id)
     else:
         form = VisitAssessmentForm(instance=assessment)
 
@@ -113,6 +101,27 @@ def visit_assessment(request, visit_id: int):
         "opd_color": color,
         "opd_reasons": reasons,
         "followup_visit_id": getattr(assessment, "followup_visit_id", None),
+    })
+
+
+# -----------------------------
+# OPD VISIT DETAIL (ดูรายละเอียด Visit พร้อม Assessment)
+# URL: /opd/visit/<visit_id>/detail/
+# -----------------------------
+@login_required
+def opd_visit_detail(request, visit_id: int):
+    visit = get_object_or_404(Visit.objects.select_related("patient"), pk=visit_id)
+    logs = TelemetryLog.objects.filter(visit=visit).select_related("device").order_by("-ts")[:50]
+
+    # ดึงข้อมูล assessment ถ้ามี
+    assessment = None
+    if hasattr(visit, 'opd_assessment'):
+        assessment = visit.opd_assessment
+
+    return render(request, "queues/monitor_visit_detail.html", {
+        "visit": visit,
+        "logs": logs,
+        "assessment": assessment
     })
 
 
@@ -214,11 +223,17 @@ def post_opd_visit_detail(request, visit_id: int):
         .order_by("-ts")[:100]
     )
 
+    # ดึงข้อมูล assessment ถ้ามี
+    assessment = None
+    if hasattr(visit, 'opd_assessment'):
+        assessment = visit.opd_assessment
+
     # ใช้ template เดิมของ queues ได้ถ้ามีอยู่แล้ว
     # ถ้าอยากแยกไฟล์ใหม่ค่อยทำ templates/opd/followup_detail.html ภายหลัง
     return render(request, "queues/monitor_visit_detail.html", {
         "visit": visit,
         "logs": logs,
+        "assessment": assessment,
     })
 
 

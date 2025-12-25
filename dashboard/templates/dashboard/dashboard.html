@@ -120,11 +120,33 @@
     return "";
   }
 
-  function setSeverity(visitId, sev){
+  async function setSeverity(visitId, sev){
+    // อัปเดตใน cache ก่อน (ให้ UI เร็ว)
     const item = cachedItems.find(x=>x.visit_id===visitId);
     if(!item) return;
     item.severity = sev;
     render();
+
+    // บันทึกลง database
+    try {
+      const res = await fetch(`/queues/api/update-severity/${visitId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ severity: sev })
+      });
+      const data = await res.json();
+      if(!data.ok){
+        console.error('Failed to update severity:', data.error);
+        // ถ้าบันทึกไม่สำเร็จ รีโหลดข้อมูลจาก server
+        await loadSummary();
+      }
+    } catch(err) {
+      console.error('Error updating severity:', err);
+      // ถ้าเกิด error รีโหลดข้อมูลจาก server
+      await loadSummary();
+    }
   }
 
   function render(){

@@ -12,6 +12,7 @@ urlpatterns = [
     path("triage/<int:visit_id>/", views.triage_visit, name="triage_visit"),
     path("call/<int:visit_id>/", views.call_visit, name="call_visit"),
     path("location/<int:visit_id>/", views.update_location, name="update_location"),
+    path("api/update-severity/<int:visit_id>/", views.update_severity_api, name="update_severity_api"),
 
     # ✅ /queues/monitor/ = FOLLOWUP monitor (หลัง OPD)
     path("monitor/", opd_views.post_opd_monitor, name="monitor_dashboard"),

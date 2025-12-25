@@ -64,6 +64,38 @@ def triage_visit(request, visit_id: int):
     return redirect("queue_list")
 
 
+@login_required
+@require_POST
+@csrf_exempt
+def update_severity_api(request, visit_id: int):
+    """
+    API สำหรับ Dashboard เปลี่ยนสี severity
+    POST /queues/api/update-severity/<visit_id>/
+    Body: {"severity": "RED"|"YELLOW"|"GREEN"}
+    """
+    visit = get_object_or_404(Visit, id=visit_id)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        new_sev = data.get("severity")
+
+        if new_sev not in ["RED", "YELLOW", "GREEN"]:
+            return JsonResponse({"ok": False, "error": "Invalid severity"}, status=400)
+
+        visit.final_severity = new_sev
+        visit.triaged_at = timezone.now()
+        visit.save(update_fields=["final_severity", "triaged_at"])
+
+        q = visit.queue
+        q.priority = {"RED": 1, "YELLOW": 2, "GREEN": 3}[new_sev]
+        q.save(update_fields=["priority"])
+
+        return JsonResponse({"ok": True, "visit_id": visit.id, "severity": new_sev})
+
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+
 # -----------------------------
 # IoT API
 # -----------------------------
@@ -327,7 +359,17 @@ def monitor_summary_api(request):
 def monitor_visit_detail(request, visit_id: int):
     visit = get_object_or_404(Visit.objects.select_related("patient"), pk=visit_id)
     logs = TelemetryLog.objects.filter(visit=visit).select_related("device").order_by("-ts")[:50]
-    return render(request, "queues/monitor_visit_detail.html", {"visit": visit, "logs": logs})
+
+    # ดึงข้อมูล assessment ถ้ามี
+    assessment = None
+    if hasattr(visit, 'opd_assessment'):
+        assessment = visit.opd_assessment
+
+    return render(request, "queues/monitor_visit_detail.html", {
+        "visit": visit,
+        "logs": logs,
+        "assessment": assessment
+    })
 
 
 # -----------------------------

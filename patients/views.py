@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from .forms import PatientForm
 from .models import Patient
-from queues.models import Visit, Queue
+from queues.models import Visit, Queue, VitalSign
 from ai_triage.services import apply_ai_triage
 
 
@@ -42,17 +42,25 @@ def register_patient(request):
                 registered_at=timezone.now(),
             )
 
-            # AI Triage
+            # สร้าง VitalSign จากข้อมูลที่กรอกในฟอร์ม
+            VitalSign.objects.create(
+                visit=visit,
+                sys_bp=patient.bp_sys,
+                dia_bp=patient.bp_dia,
+            )
+
+            # AI Triage (จะอัปเดต visit.final_severity และ severity อัตโนมัติ)
             triage_result = apply_ai_triage(visit)
 
-            severity = (
-                triage_result.get("ai_severity")
-                if isinstance(triage_result, dict)
-                else getattr(triage_result, "ai_severity", None)
-            ) or "GREEN"
-
-            visit.final_severity = severity
-            visit.save()
+            # ถ้า AI Triage ไม่สามารถประเมินได้ (return None) → ใช้ GREEN
+            if triage_result and isinstance(triage_result, dict):
+                severity = triage_result.get("severity", "GREEN")
+            else:
+                severity = "GREEN"
+                # ถ้า AI Triage ไม่ทำงาน ต้องตั้งค่า severity เอง
+                visit.final_severity = severity
+                visit.triaged_at = timezone.now()
+                visit.save()
 
             # Queue
             Queue.objects.create(

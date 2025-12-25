@@ -158,6 +158,129 @@
     <span class="pill">💊 ยาที่ใช้ประจำ: {{ visit.patient.medications|default:"-" }}</span>
   </div>
 </div>
+
+<!-- Assessment Section -->
+{% if assessment %}
+<div class="card">
+  <h3>Assessment</h3>
+
+  <!-- Chief Complaint -->
+  <div style="margin-bottom:15px">
+    <div style="font-weight:700; margin-bottom:5px">อาการสำคัญ (Chief Complaint)</div>
+    <div style="padding:8px; background:#f5f5f5; border-radius:4px">
+      {{ assessment.chief_complaint|default:"ไม่มีข้อมูล" }}
+    </div>
+  </div>
+
+  <!-- Clinical Values -->
+  <div style="font-weight:700; margin-bottom:5px">ค่า/อาการที่ระบบใช้คำนวณ</div>
+  <div class="kvgrid">
+    <div class="kv">
+      <div class="k">Pain Score</div>
+      <div class="v">{{ assessment.pain_score|default:"-" }}</div>
+    </div>
+    <div class="kv">
+      <div class="k">BT (°C)</div>
+      <div class="v">{{ assessment.bt|default:"-" }}</div>
+    </div>
+    <div class="kv">
+      <div class="k">SYS BP</div>
+      <div class="v">{{ assessment.sys_bp|default:"-" }}</div>
+    </div>
+    <div class="kv">
+      <div class="k">DIA BP</div>
+      <div class="v">{{ assessment.dia_bp|default:"-" }}</div>
+    </div>
+    <div class="kv">
+      <div class="k">FBS (mg%)</div>
+      <div class="v">{{ assessment.fbs|default:"-" }}</div>
+    </div>
+    <div class="kv">
+      <div class="k">Lab K</div>
+      <div class="v">{{ assessment.lab_k|default:"-" }}</div>
+    </div>
+    <div class="kv">
+      <div class="k">Lab Mg</div>
+      <div class="v">{{ assessment.lab_mg|default:"-" }}</div>
+    </div>
+    <div class="kv">
+      <div class="k">Lab Hct</div>
+      <div class="v">{{ assessment.lab_hct|default:"-" }}</div>
+    </div>
+  </div>
+
+  <!-- Flags/Reasons -->
+  <div style="margin-top:15px">
+    <div style="font-weight:700; margin-bottom:5px">เหตุผลที่เป็น "ข้อความ"</div>
+    <div class="row" style="flex-wrap:wrap">
+      {% if assessment.anxious_family %}<span class="pill">ญาติวิตกกังวลมาก</span>{% endif %}
+      {% if assessment.non_toxic_bite %}<span class="pill">ถูกสัตว์ไม่มีพิษกัด/ข่วน</span>{% endif %}
+      {% if assessment.very_fatigue %}<span class="pill">เหนื่อยเพลียมาก</span>{% endif %}
+      {% if assessment.blood_receive %}<span class="pill">มารับเลือด</span>{% endif %}
+      {% if not assessment.anxious_family and not assessment.non_toxic_bite and not assessment.very_fatigue and not assessment.blood_receive %}
+        <span class="muted">-</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Special Groups -->
+  <div style="margin-top:15px">
+    <div style="font-weight:700; margin-bottom:5px">กลุ่มพิเศษ (เร่งด่วนสีเหลือง)</div>
+    <div class="row" style="flex-wrap:wrap">
+      {% if assessment.monk %}<span class="pill">พระภิกษุ/สามเณร</span>{% endif %}
+      {% if assessment.age %}<span class="pill">อายุ {{ assessment.age }} ปี</span>{% endif %}
+      {% if assessment.child_under_5 %}<span class="pill">เด็กอายุต่ำกว่า 5 ปี</span>{% endif %}
+      {% if assessment.pregnant %}<span class="pill">ตั้งครรภ์{% if assessment.ga_weeks %} (GA {{ assessment.ga_weeks }} สัปดาห์){% endif %}</span>{% endif %}
+      {% if assessment.epilepsy %}<span class="pill">Epilepsy</span>{% endif %}
+      {% if assessment.pulmonary_tb_mplus %}<span class="pill">Pulmonary TB M+</span>{% endif %}
+      {% if assessment.low_immunity %}<span class="pill">ภูมิต้านทานต่ำ{% if assessment.low_immunity_detail %} ({{ assessment.low_immunity_detail }}){% endif %}</span>{% endif %}
+      {% if not assessment.monk and not assessment.age and not assessment.child_under_5 and not assessment.pregnant and not assessment.epilepsy and not assessment.pulmonary_tb_mplus and not assessment.low_immunity %}
+        <span class="muted">-</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Diagnosis -->
+  <div style="margin-top:15px">
+    <div style="font-weight:700; margin-bottom:5px">วินิจฉัย (Diagnosis)</div>
+    <div style="padding:8px; background:#f5f5f5; border-radius:4px">
+      {{ assessment.diagnosis|default:"ไม่มีข้อมูล" }}
+    </div>
+  </div>
+
+  <!-- Treatment -->
+  <div style="margin-top:15px">
+    <div style="font-weight:700; margin-bottom:5px">การรักษา/แผน (Treatment)</div>
+    <div style="padding:8px; background:#f5f5f5; border-radius:4px">
+      {{ assessment.treatment|default:"ไม่มีข้อมูล" }}
+    </div>
+  </div>
+
+  <!-- Next Appointment -->
+  <div style="margin-top:15px">
+    <div style="font-weight:700; margin-bottom:5px">นัดหมายครั้งต่อไป</div>
+    <div class="row">
+      <span class="pill">📅 วัน/เวลา: {{ assessment.next_appointment_at|default:"-" }}</span>
+      <span class="pill">📝 หมายเหตุ: {{ assessment.next_appointment_note|default:"-" }}</span>
+    </div>
+  </div>
+
+  <!-- OPD Urgency -->
+  <div style="margin-top:15px; padding:10px; background:#f9f9f9; border-radius:4px">
+    <div style="font-weight:700; margin-bottom:5px">ผลการประเมินความเร่งด่วน OPD</div>
+    <div class="row">
+      {% with urg=assessment.opd_urgency|upper %}
+        <span class="sev {% if urg == 'RED' %}red{% elif urg == 'YELLOW' %}yellow{% else %}green{% endif %}">
+          {{ assessment.get_opd_urgency_display }}
+        </span>
+      {% endwith %}
+      {% if assessment.opd_reason %}
+        <span class="pill">เหตุผล: {{ assessment.opd_reason }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
     
       <tbody>
         {% for x in logs %}

@@ -70,6 +70,7 @@
               <td class="muted">{{ v.called_at|default:"-" }}</td>
               <td>
                 <a class="btn" href="{% url 'visit_assessment' v.id %}">📝 อาการ/ผลตรวจ + นัดหมาย</a>
+                <a class="btn" href="{% url 'opd_visit_detail' v.id %}" style="background:#4CAF50">👁️ ดูรายละเอียด</a>
               </td>
             </tr>
             {% endwith %}
