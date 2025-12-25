@@ -117,3 +117,178 @@ thead th {
 tbody tr {
   border-bottom: 1px solid #e5e7eb;
 }
+
+/* ===== Severity Filter Buttons ===== */
+.severity-filter{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.sev-btn{
+  padding:6px 12px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  background:#fff;
+}
+
+.sev-btn.red{color:#dc2626}
+.sev-btn.yellow{color:#ca8a04}
+.sev-btn.green{color:#16a34a}
+
+.sev-btn.active{
+  background:#0f172a;
+  color:#fff;
+}
+/* ===== Severity Badges ===== */
+.badge-red {
+  background: #7f1d1d;      /* red-900 */
+  color: #fff;
+}
+
+.badge-yellow {
+  background: #b45309;   /* amber-700 */
+  color: #fff;
+}
+
+.badge-green {
+  background: #14532d;      /* green-900 */
+  color: #fff;
+}
+
+/* ===============================
+   Table Row – Dark Intensity
+   =============================== */
+.level-red {
+  background: linear-gradient(
+    90deg,
+    #7f1d1d 0%,
+    #3f0d0d 100%
+  );
+  color: #fff;
+  border-left: 8px solid #dc2626;
+}
+
+.level-yellow {
+  background: linear-gradient(
+    90deg,
+    #f59e0b 0%,   /* yellow/amber */
+    #92400e 100%
+  );
+  color: #fff;
+  border-left: 8px solid #fde047; /* yellow border */
+}
+
+.level-green {
+  background: linear-gradient(
+    90deg,
+    #14532d 0%,
+    #052e16 100%
+  );
+  color: #fff;
+  border-left: 8px solid #22c55e;
+}
+
+/* ให้ข้อความรองยังอ่านได้ */
+.level-red .muted,
+.level-yellow .muted,
+.level-green .muted{
+  color: rgba(255,255,255,.75);
+}
+
+/* pill / badge / link ในแถวเข้ม */
+.level-red .pill,
+.level-yellow .pill,
+.level-green .pill{
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.25);
+  color: #fff;
+}
+
+.level-red a,
+.level-yellow a,
+.level-green a{
+  color: #e0f2fe;
+}
+
+.btn-red,
+.btn-yellow,
+.btn-green{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+
+  padding:10px 12px;
+  border-radius:12px;
+
+  font-size:13px;
+  font-weight:700;
+
+  cursor:pointer;
+  transition:all .18s ease;
+}
+
+/* ===== RED (Critical) ===== */
+.btn-red{
+  color:#7f1d1d;
+  background:linear-gradient(
+    180deg,
+    #fee2e2,
+    #fecaca
+  );
+  border:1px solid #f87171;
+  box-shadow:0 6px 16px rgba(220,38,38,.28);
+}
+
+.btn-red:hover{
+  background:linear-gradient(180deg,#fecaca,#fca5a5);
+  box-shadow:0 8px 22px rgba(220,38,38,.38);
+  transform:translateY(-1px);
+}
+
+/* ===== YELLOW (Warning) ===== */
+.btn-yellow{
+  color:#92400e;
+  background:linear-gradient(
+    180deg,
+    #fef3c7,
+    #fde68a
+  );
+  border:1px solid #facc15;
+  box-shadow:0 6px 16px rgba(245,158,11,.25);
+}
+
+.btn-yellow:hover{
+  background:linear-gradient(180deg,#fde68a,#fcd34d);
+  box-shadow:0 8px 22px rgba(245,158,11,.35);
+  transform:translateY(-1px);
+}
+
+/* ===== GREEN (Normal) ===== */
+.btn-green{
+  color:#14532d;
+  background:linear-gradient(
+    180deg,
+    #dcfce7,
+    #bbf7d0
+  );
+  border:1px solid #4ade80;
+  box-shadow:0 6px 16px rgba(22,163,74,.25);
+}
+
+.btn-green:hover{
+  background:linear-gradient(180deg,#bbf7d0,#86efac);
+  box-shadow:0 8px 22px rgba(22,163,74,.35);
+  transform:translateY(-1px);
+}
+
+/* ===== Active ===== */
+.btn-red:active,
+.btn-yellow:active,
+.btn-green:active{
+  transform:translateY(0);
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+}

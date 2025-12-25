@@ -5,11 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard</title>
-  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=4">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=11">
 </head>
 
 <body>
 <div class="wrap">
+
+  <!-- ================= TOPBAR ================= -->
   <div class="topbar">
     <div class="pill-title">
       <div class="icon">📊</div>
@@ -29,7 +31,9 @@
     </div>
   </div>
 
+  <!-- ================= GRID ================= -->
   <div class="grid">
+
     <!-- KPI -->
     <div class="card span4">
       <div class="kpi">
@@ -54,28 +58,29 @@
         </div>
         <div class="pill"><span class="dot good"></span>OK</div>
       </div>
-      <div class="muted">อัปเดตจากฐานข้อมูล ณ {{ now }}</div>
+      <div class="muted">อัปเดต ณ {{ now }}</div>
     </div>
 
     <div class="card span4">
       <div class="kpi">
         <div>
-          <div class="label">Online จาก IoT (FOLLOWUP)</div>
+          <div class="label">Online จาก IoT</div>
           <div class="val" id="onlineCount">-</div>
         </div>
         <div class="pill"><span class="dot good"></span>60s</div>
       </div>
-      <div class="muted" id="serverTime">กำลังโหลดจาก /queues/monitor/api/latest/ ...</div>
+      <div class="muted" id="serverTime">loading...</div>
     </div>
 
-    <!-- Latest list -->
+    <!-- ================= TABLE ================= -->
     <div class="card span12">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <div>
-          <div style="font-weight:900;font-size:16px">รายการล่าสุด (Top 12) - FOLLOWUP</div>
-          <div class="muted">ดึงจาก /queues/monitor/api/latest/</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:900;font-size:16px">
+          รายการล่าสุด (Top 12) - FOLLOWUP
         </div>
-        <div class="pill" id="lastRefresh"><span class="dot warn"></span>กำลังโหลด...</div>
+        <div class="pill" id="lastRefresh">
+          <span class="dot warn"></span>loading...
+        </div>
       </div>
 
       <div style="overflow:auto;margin-top:10px">
@@ -86,14 +91,12 @@
               <th>ผู้ป่วย</th>
               <th>Severity</th>
               <th>Online</th>
-              <th>Spark BPM</th>
-              <th>Spark O2</th>
               <th>Vitals</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody id="rows">
-            <tr><td colspan="8" class="muted">กำลังโหลด...</td></tr>
+            <tr><td colspan="6">กำลังโหลด...</td></tr>
           </tbody>
         </table>
       </div>
@@ -102,113 +105,87 @@
 </div>
 
 <script>
+  let cachedItems = [];
+
   function vitalsText(v){
     if(!v) return "-";
     const bp = (v.sys_bp ?? "-") + "/" + (v.dia_bp ?? "-");
-    return `BPM ${v.bpm ?? "-"} | O2 ${v.o2sat ?? "-"} | BT ${v.bt ?? "-"} | RR ${v.rr ?? "-"} | BP ${bp}`;
+    return `BPM ${v.bpm ?? "-"} | O2 ${v.o2sat ?? "-"} | BP ${bp}`;
   }
 
-  function sparkSVG(values, w=110, h=26){
-    if(!values || values.length < 2) return `<span class="muted">-</span>`;
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const pad = 2;
-    const dx = (w - pad*2) / (values.length - 1);
-    const scale = (v) => {
-      if(max === min) return h/2;
-      return h - pad - ((v - min) / (max - min)) * (h - pad*2);
-    };
-
-    const pts = values.map((v,i)=> `${pad + i*dx},${scale(v).toFixed(1)}`).join(" ");
-    return `
-      <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-        <polyline fill="none" stroke="currentColor" stroke-width="2" points="${pts}" opacity="0.9"/>
-        <circle cx="${pad + (values.length-1)*dx}" cy="${scale(values[values.length-1]).toFixed(1)}" r="2.5" fill="currentColor"/>
-      </svg>
-    `;
+  function levelClass(sev){
+    if(sev==="RED") return "level-red";
+    if(sev==="YELLOW") return "level-yellow";
+    if(sev==="GREEN") return "level-green";
+    return "";
   }
 
-  async function loadSparklines(visitIds){
-    if(!visitIds.length) return;
-    const qs = visitIds.join(",");
-    const res = await fetch(`/queues/monitor/api/sparklines/?visit_ids=${qs}`);
-    const data = await res.json();
-    if(!data.ok) return;
+  function setSeverity(visitId, sev){
+    const item = cachedItems.find(x=>x.visit_id===visitId);
+    if(!item) return;
+    item.severity = sev;
+    render();
+  }
 
-    for(const vid of visitIds){
-      const s = data.series?.[String(vid)];
-      const elBpm = document.getElementById(`spark-bpm-${vid}`);
-      const elO2  = document.getElementById(`spark-o2-${vid}`);
-      if(elBpm) elBpm.innerHTML = sparkSVG(s?.bpm);
-      if(elO2)  elO2.innerHTML  = sparkSVG(s?.o2);
+  function render(){
+    const el = document.getElementById("rows");
+    if(cachedItems.length===0){
+      el.innerHTML = `<tr><td colspan="6">ไม่มีข้อมูล</td></tr>`;
+      return;
     }
+
+    el.innerHTML = cachedItems.slice(0,12).map(x=>`
+      <tr class="${levelClass(x.severity)}">
+        <td>#${x.visit_id}</td>
+        <td>${x.name ?? "-"}</td>
+        <td>
+          <span class="badge ${x.severity?.toLowerCase()}">${x.severity}</span>
+        </td>
+        <td>
+          ${x.online
+            ? `<span class="pill"><span class="dot good"></span>ONLINE</span>`
+            : `<span class="pill"><span class="dot bad"></span>OFFLINE</span>`}
+        </td>
+        <td class="muted">${vitalsText(x.vitals)}</td>
+        <td>
+  <a class="btn" href="/queues/monitor/visit/${x.visit_id}/">ดู</a>
+
+  <button class="btn-red"
+    onclick="setSeverity(${x.visit_id}, 'RED')">
+    🔴 RED
+  </button>
+
+  <button class="btn-yellow"
+    onclick="setSeverity(${x.visit_id}, 'YELLOW')">
+    🟡 YELLOW
+  </button>
+
+  <button class="btn-green"
+    onclick="setSeverity(${x.visit_id}, 'GREEN')">
+    🟢 GREEN
+  </button>
+</td>
+      </tr>
+    `).join("");
   }
 
   async function loadSummary(){
-    const elRows = document.getElementById("rows");
-    const elOnline = document.getElementById("onlineCount");
-    const elServer = document.getElementById("serverTime");
-    const elRefresh = document.getElementById("lastRefresh");
+    const res = await fetch("/queues/monitor/api/latest/");
+    const data = await res.json();
+    cachedItems = data.rows || [];
 
-    try{
-      // ✅ FOLLOWUP API
-      const res = await fetch("/queues/monitor/api/latest/");
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    document.getElementById("onlineCount").textContent =
+      `${cachedItems.filter(x=>x.online).length}/${cachedItems.length}`;
+    document.getElementById("serverTime").textContent =
+      "Server time: " + (data.server_time || "-");
+    document.getElementById("lastRefresh").innerHTML =
+      `<span class="dot good"></span>${new Date().toLocaleTimeString()}`;
 
-      const data = await res.json();
-      if(!data.ok) throw new Error(data.error || "API error");
-
-      // ✅ API นี้คืนเป็น rows ไม่ใช่ items
-      const items = data.rows || [];
-
-      const online = items.filter(x => x.online).length;
-      elOnline.textContent = `${online}/${items.length}`;
-      elServer.textContent = "Server time: " + (data.server_time || "-");
-      elRefresh.innerHTML = `<span class="dot good"></span>อัปเดตล่าสุด: ${new Date().toLocaleTimeString()}`;
-
-      const top = items.slice(0, 12);
-      if(top.length === 0){
-        elRows.innerHTML = `<tr><td colspan="8" class="muted">ยังไม่มีผู้ป่วย FOLLOWUP</td></tr>`;
-        return;
-      }
-
-      // render rows
-      elRows.innerHTML = top.map(x => {
-        const onlinePill = x.online
-          ? `<span class="pill"><span class="dot good"></span>ONLINE</span>`
-          : `<span class="pill"><span class="dot bad"></span>OFFLINE</span>`;
-
-        return `
-          <tr>
-            <td>#${x.visit_id}</td>
-            <td>${x.name ?? "-"}</td>
-            <td>${x.severity ?? "-"}</td>
-            <td>${onlinePill}</td>
-
-            <td><div id="spark-bpm-${x.visit_id}" class="muted">-</div></td>
-            <td><div id="spark-o2-${x.visit_id}" class="muted">-</div></td>
-
-            <td class="muted">${vitalsText(x.vitals)}</td>
-            <td>
-              <a class="btn" style="padding:8px 10px" href="/queues/monitor/visit/${x.visit_id}/">ดู</a>
-            </td>
-          </tr>
-        `;
-      }).join("");
-
-      // load sparklines
-      const visitIds = top.map(x => x.visit_id);
-      loadSparklines(visitIds);
-
-    }catch(e){
-      elRefresh.innerHTML = `<span class="dot bad"></span>โหลดไม่ได้: ${e.message}`;
-      elRows.innerHTML = `<tr><td colspan="8" class="muted">เชื่อมต่อ API ไม่สำเร็จ</td></tr>`;
-    }
+    render();
   }
 
   loadSummary();
   setInterval(loadSummary, 5000);
 </script>
-
 </body>
 </html>
