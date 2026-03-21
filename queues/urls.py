@@ -27,9 +27,6 @@ urlpatterns = [
     path("monitor/waiting/visit/<int:visit_id>/", views.monitor_visit_detail, name="waiting_monitor_visit_detail"),
     path("monitor/waiting/api/sparklines/", views.monitor_sparklines_api, name="waiting_monitor_sparklines_api"),
 
-    # map
-    path("map/", views.map_view, name="map_view"),
-
     # iot api
     path("api/iot/telemetry/", views.iot_telemetry, name="iot_telemetry"),
 

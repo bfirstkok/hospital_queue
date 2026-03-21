@@ -372,20 +372,6 @@ def monitor_visit_detail(request, visit_id: int):
     })
 
 
-# -----------------------------
-# MAP
-# -----------------------------
-@login_required
-def map_view(request):
-    visits = (
-        _visit_queryset_with_latest_vitals_and_gps()
-        .exclude(last_lat__isnull=True)
-        .exclude(last_lng__isnull=True)[:200]
-    )
-    now = timezone.now()
-    return render(request, "queues/map.html", {"visits": visits, "now": now})
-
-
 @login_required
 @csrf_exempt
 @require_POST
